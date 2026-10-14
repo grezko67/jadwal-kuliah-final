@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#000000">
+<title>Jadwal dan Tugas Kuliah</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#f2ede4;--mut:#8d8d8d;--line:#232323}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:64px}
+body{background:#000;color:var(--ink);font:400 1rem/1.6 "Hanken Grotesk",system-ui,sans-serif}
+.wrap{max-width:1128px;margin:0 auto;padding-inline:24px}
+a{color:inherit}
+a:focus-visible,.blok:focus-visible,input:focus-visible+label{outline:2px solid var(--ink);outline-offset:3px}
+h1,h2,.kepala,.blok strong,.isi strong{font-family:"Fraunces",Georgia,serif}
+
+header{padding-block:96px 56px}
+h1{font-size:clamp(3rem,9vw,6.5rem);font-weight:300;line-height:1;letter-spacing:-.03em}
+header p{margin-top:22px;color:var(--mut);font-size:1.05rem}
+nav{position:sticky;top:0;z-index:10;background:rgba(0,0,0,.78);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;gap:28px;padding-block:14px}
+nav a{text-decoration:none;font-weight:500;color:var(--mut);transition:color .2s}
+nav a:hover{color:var(--ink)}
+
+section{padding-top:88px}
+h2{font-size:clamp(2rem,5vw,3rem);font-weight:300;line-height:1.1;letter-spacing:-.02em;margin-bottom:28px}
+.petunjuk{margin:-16px 0 32px;color:var(--mut)}
+
+/* Jadwal: rentang jam menyesuaikan isi jadwal (minimal 08.00-17.00), 1 menit = 1.5px */
+.jadwal{--px:1.5px;display:grid;grid-template-columns:44px repeat(5,minmax(0,1fr));gap:0 10px}
+.kolom{min-width:0}
+.kepala{height:44px;display:flex;align-items:center;font-size:1.35rem;font-weight:500}
+.lajur{position:relative;height:calc(var(--tot,540)*var(--px));border-bottom:1px solid var(--line);background:repeating-linear-gradient(to bottom,var(--line) 0 1px,transparent 1px calc(60*var(--px)))}
+.sumbu .lajur{background:none;border:0}
+.sumbu span{position:absolute;right:0;top:calc(var(--m)*var(--px));transform:translateY(-50%);font-size:.75rem;color:var(--mut);font-variant-numeric:tabular-nums}
+.blok{position:absolute;left:calc(100%*var(--l,0)/var(--n,1));width:calc(100%/var(--n,1));top:calc(var(--m)*var(--px));height:calc(var(--d)*var(--px) - 4px);padding:12px 14px;border-radius:10px;border-left:3px solid var(--c);background:#111;background:color-mix(in srgb,var(--c) 9%,#000)}
+.blok:hover,.blok:focus,.blok:focus-within{height:auto;min-height:calc(var(--d)*var(--px) - 4px);z-index:3;background:#1a1a1a;background:color-mix(in srgb,var(--c) 18%,#000)}
+.blok time{display:block;color:var(--c);font-size:.78rem;font-weight:600;font-variant-numeric:tabular-nums}
+.blok strong{display:block;margin:2px 0 4px;font-size:1.02rem;font-weight:500;line-height:1.25}
+.blok span{display:block;color:var(--mut);font-size:.8rem;line-height:1.4}
+.blok .dosen{display:none}
+.blok:hover .dosen,.blok:focus .dosen,.blok:focus-within .dosen{display:block}
+.blok .aksib{display:none;gap:16px;margin-top:10px}
+.blok:hover .aksib,.blok:focus .aksib,.blok:focus-within .aksib{display:flex}
+.aksib button{background:none;border:0;padding:0;font:inherit;font-size:.8rem;color:var(--ink);text-decoration:underline;text-underline-offset:4px;cursor:pointer}
+.aksib button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+
+/* Tugas */
+.tugas{list-style:none;display:grid;gap:12px}
+.tugas li{--fg:var(--ink);--bg:#000;--m:var(--mut);position:relative;color:var(--fg);border:1px solid #2e2e2e;border-radius:18px;transition:border-color .2s}
+.tugas li:hover{border-color:#5a5a5a}
+.tugas li.segera{--fg:#000;--bg:var(--ink);--m:#57534b;background:var(--ink);border-color:var(--ink)}
+.tugas input{position:absolute;opacity:0}
+.tugas label{display:grid;grid-template-columns:24px 1fr auto;gap:4px 18px;padding:22px 24px 10px;cursor:pointer;align-items:start}
+.tugas label::before{content:"";width:24px;height:24px;margin-top:3px;border:1.5px solid var(--fg);border-radius:50%;font:700 13px/21px sans-serif;text-align:center}
+.tugas input:checked+label::before{content:"✓";background:var(--fg);color:var(--bg)}
+.tugas input:checked+label .isi{text-decoration:line-through;opacity:.5}
+.isi strong{display:block;font-size:1.3rem;font-weight:500;line-height:1.3}
+.isi span,.info span,.info time{display:block;color:var(--m);font-size:.92rem}
+.info{text-align:right}
+.catatan{margin-top:22px;color:var(--mut);font-size:.9rem;max-width:60ch}
+
+footer{margin:96px 0 48px;padding-top:24px;border-top:1px solid var(--line);color:var(--mut);font-size:.9rem}
+
+/* Hari ini (diatur otomatis oleh JavaScript) */
+.kolom.ini .kepala::after{content:"Hari ini";margin-left:12px;padding:2px 11px;border-radius:99px;background:var(--ink);color:#000;font:600 .72rem "Hanken Grotesk",system-ui,sans-serif}
+.blok.sekarang{box-shadow:0 0 0 1px var(--c);box-shadow:0 0 0 1px var(--c),0 0 28px color-mix(in srgb,var(--c) 32%,transparent)}
+.blok.sekarang time::after{content:"Sedang berlangsung";display:block;font-weight:500}
+@media(min-width:1001px){
+  .ada-ini .kolom:not(.ini) .blok{opacity:.5}
+  .ada-ini .kolom:not(.ini) .blok:hover,.ada-ini .kolom:not(.ini) .blok:focus{opacity:1}
+}
+
+/* Tambah dan ubah tugas */
+.panel{margin-bottom:24px}
+.panel summary{display:inline-flex;align-items:center;gap:10px;padding:10px 22px;border:1px solid var(--ink);border-radius:99px;cursor:pointer;font-weight:500;list-style:none}
+.panel summary::-webkit-details-marker{display:none}
+.panel summary::before{content:"+";font-size:1.25rem;line-height:1}
+.panel[open] summary::before{content:"×"}
+.panel summary:focus-visible,.btn:focus-visible,.aksi button:focus-visible,form input:focus-visible,form select:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+form{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px;padding:26px;border:1px solid #2e2e2e;border-radius:18px}
+form label{display:grid;gap:7px;font-size:.85rem;color:var(--mut)}
+form input,form select{font:inherit;font-size:1rem;color:var(--ink);background:#000;border:1px solid #3a3a3a;border-radius:10px;padding:11px 13px;color-scheme:dark}
+.lebar{grid-column:1/-1}
+.tombol{display:flex;gap:12px}
+.btn{font:inherit;font-weight:600;padding:10px 22px;border-radius:99px;border:1px solid var(--ink);background:none;color:var(--ink);cursor:pointer}
+.btn.utama{background:var(--ink);color:#000}
+.aksi{display:flex;gap:18px;padding:0 24px 16px 66px}
+.aksi button{background:none;border:0;padding:0;font:inherit;font-size:.85rem;color:var(--m);text-decoration:underline;text-underline-offset:4px;cursor:pointer}
+.aksi button:hover{color:var(--fg)}
+.tugas li.kosong{padding:22px 24px;color:var(--mut);border-style:dashed}
+.alat{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;margin-top:22px}
+.alat .catatan{margin:0}
+
+.kosong-jadwal{margin-bottom:24px;color:var(--mut);max-width:60ch}
+.alat-jadwal{margin-top:22px}
+
+@media(max-width:1000px){
+  .jadwal{display:flex;flex-direction:column}
+  .kolom.ini{order:-1}
+  .sumbu,.petunjuk{display:none}
+  .kolom{margin-bottom:36px}
+  .lajur{height:auto;border:0;background:none;display:grid;gap:10px}
+  .kolom.hari-kosong{display:none}
+  .blok{position:static;height:auto;width:auto}
+  .blok:hover,.blok:focus,.blok:focus-within{min-height:0}
+  .blok .dosen{display:block}
+  .blok .aksib{display:flex}
+}
+@media(max-width:640px){
+  header{padding-block:64px 40px}
+  section{padding-top:64px}
+  .tugas label{grid-template-columns:24px 1fr;padding:18px 18px 8px}
+  .aksi{padding-left:60px}
+  form{grid-template-columns:1fr}
+  .info{grid-column:2;text-align:left}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <h1>Jadwal dan Tugas Kuliah</h1>
+  <p>Semester ganjil 2026/2027</p>
+</header>
+
+<nav><div class="wrap"><a href="#jadwal">Jadwal</a><a href="#tugas">Tugas</a></div></nav>
+
+<main class="wrap">
+
+  <section id="jadwal">
+    <h2>Jadwal kuliah</h2>
+    <p class="petunjuk">Arahkan kursor ke mata kuliah (atau tekan Tab) untuk melihat dosen dan mengubahnya.</p>
+
+    <details class="panel" id="panel-jadwal">
+      <summary>Tambah mata kuliah</summary>
+      <form id="form-jadwal">
+        <label class="lebar">Mata kuliah
+          <input name="nama" type="text" maxlength="60" required placeholder="Contoh: Algoritma dan Pemrograman">
+        </label>
+        <label>Hari
+          <select name="hari" required>
+            <option value="1">Senin</option><option value="2">Selasa</option><option value="3">Rabu</option><option value="4">Kamis</option><option value="5">Jumat</option>
+          </select>
+        </label>
+        <label>Ruang
+          <input name="ruang" type="text" maxlength="40" placeholder="Opsional">
+        </label>
+        <label>Mulai
+          <input name="mulai" type="time" required>
+        </label>
+        <label>Selesai
+          <input name="selesai" type="time" required>
+        </label>
+        <label class="lebar">Dosen
+          <input name="dosen" type="text" maxlength="80" placeholder="Opsional">
+        </label>
+        <p class="lebar catatan" id="galat-jadwal" role="alert" hidden></p>
+        <div class="lebar tombol">
+          <button class="btn utama" id="simpan-jadwal" type="submit">Tambah mata kuliah</button>
+          <button class="btn" id="batal-jadwal" type="button" hidden>Batal</button>
+        </div>
+      </form>
+    </details>
+
+    <p class="kosong-jadwal" id="kosong-jadwal" hidden>Jadwal masih kosong. Tambahkan mata kuliah pertamamu lewat tombol di atas.</p>
+
+    <div class="jadwal" id="jadwal-grid">
+      <div class="kolom sumbu" aria-hidden="true">
+        <div class="kepala"></div>
+        <div class="lajur" id="sumbu"></div>
+      </div>
+      <div class="kolom"><h3 class="kepala">Senin</h3><div class="lajur"></div></div>
+      <div class="kolom"><h3 class="kepala">Selasa</h3><div class="lajur"></div></div>
+      <div class="kolom"><h3 class="kepala">Rabu</h3><div class="lajur"></div></div>
+      <div class="kolom"><h3 class="kepala">Kamis</h3><div class="lajur"></div></div>
+      <div class="kolom"><h3 class="kepala">Jumat</h3><div class="lajur"></div></div>
+    </div>
+
+    <div class="alat alat-jadwal">
+      <button class="btn" id="kosongkan-jadwal" type="button">Hapus semua jadwal</button>
+      <p class="catatan">Jadwal tersimpan otomatis di browser ini, jadi tiap orang punya jadwalnya sendiri.</p>
+    </div>
+  </section>
+
+  <section id="tugas">
+    <h2>Tugas yang belum dikerjakan</h2>
+
+    <details class="panel" id="panel">
+      <summary>Tambah tugas baru</summary>
+      <form id="form">
+        <label class="lebar">Judul tugas
+          <input name="judul" type="text" maxlength="120" required placeholder="Contoh: Laporan praktikum Sistem Digital">
+        </label>
+        <label>Mata kuliah
+          <input name="mk" type="text" list="mk-list" maxlength="60" placeholder="Pilih atau ketik sendiri">
+        </label>
+        <label>Deadline
+          <input name="dl" type="datetime-local">
+        </label>
+        <label class="lebar">Keterangan
+          <input name="ket" type="text" maxlength="200" placeholder="Opsional">
+        </label>
+        <div class="lebar tombol">
+          <button class="btn utama" id="simpan" type="submit">Tambah tugas</button>
+          <button class="btn" id="batal" type="button" hidden>Batal</button>
+        </div>
+      </form>
+      <datalist id="mk-list"></datalist>
+    </details>
+
+    <ul class="tugas" id="daftar"></ul>
+    <noscript><p class="catatan">Aktifkan JavaScript untuk melihat dan mengubah daftar tugas.</p></noscript>
+
+    <div class="alat">
+      <button class="btn" id="bersih" type="button">Hapus yang sudah selesai</button>
+      <p class="catatan">Tugas tersimpan otomatis di browser ini, jadi tidak ikut pindah ke HP atau laptop lain.</p>
+    </div>
+  </section>
+
+  <footer>Dibuat dengan HTML, CSS, dan JavaScript. Jadwal dan tugas bisa ditambah dan diubah langsung lewat halaman ini.</footer>
+</main>
+
+<script>
+(function(){
+const KEY='tugas-kuliah-v1';
+const KEY_J='jadwal-kuliah-v1';
+const HR=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const BL=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+const $=s=>document.querySelector(s);
+const p2=n=>String(n).padStart(2,'0');
+const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt)e.textContent=txt;return e};
+
+/* Daftar tugas dan jadwal awal. Kosong di versi publik, jadi tiap pengunjung mulai dari daftar kosong.
+   Contoh isi jadwal: {id:'a1',nama:'Statistika Dasar',hari:1,mulai:880,selesai:980,ruang:'MIPA 3.2',dosen:'Nama Dosen',c:'#7cc4e8'}
+   (hari 1=Senin ... 5=Jumat; mulai dan selesai dalam menit sejak 00.00, jadi 14.40 = 14*60+40 = 880) */
+const awal=[];
+const jadwalAwal=[];
+const WARNA=['#7cc4e8','#8fd6a4','#6fd3cf','#e8b979','#b39cf0','#e29cd3','#f0a58a','#e6d27a','#ef9bb5'];
+
+/* Data disimpan di localStorage (penyimpanan browser) */
+const muat=(k,dflt)=>{let d;try{d=JSON.parse(localStorage.getItem(k))}catch(e){}return Array.isArray(d)?d:dflt};
+let data=muat(KEY,awal);
+let kuliah=muat(KEY_J,jadwalAwal);
+const simpan=()=>{try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}};
+const simpanJ=()=>{try{localStorage.setItem(KEY_J,JSON.stringify(kuliah))}catch(e){}};
+
+const fmt=s=>{const d=new Date(s);return HR[d.getDay()]+', '+d.getDate()+' '+BL[d.getMonth()]+' '+d.getFullYear()+', '+p2(d.getHours())+'.'+p2(d.getMinutes())};
+const rel=s=>{
+  if(new Date(s)<new Date())return 'Terlambat';
+  const n=Math.round((new Date(s).setHours(0,0,0,0)-new Date().setHours(0,0,0,0))/864e5);
+  return n===0?'Hari ini':n===1?'Besok':n+' hari lagi';
+};
+/* Tugas tampil terang kalau deadline kurang dari 3 hari lagi atau sudah lewat */
+const mendesak=t=>!t.selesai&&t.dl&&new Date(t.dl)-Date.now()<72*36e5;
+const urut=(a,b)=>{
+  if(a.selesai!==b.selesai)return a.selesai?1:-1;
+  const x=a.dl||'z',y=b.dl||'z';
+  return x<y?-1:x>y?1:0;
+};
+
+function tampil(){
+  const ul=$('#daftar');
+  ul.replaceChildren();
+  data.slice().sort(urut).forEach(t=>{
+    const li=el('li',mendesak(t)?'segera':'');
+    const cb=el('input');cb.type='checkbox';cb.id='c-'+t.id;cb.checked=!!t.selesai;cb.dataset.id=t.id;
+    const lb=el('label');lb.htmlFor=cb.id;
+    const isi=el('span','isi');isi.append(el('strong','',t.judul));
+    if(t.ket)isi.append(el('span','',t.ket));
+    const info=el('span','info');
+    if(t.mk)info.append(el('span','',t.mk));
+    if(t.dl){info.append(el('time','',fmt(t.dl)));if(!t.selesai)info.append(el('span','',rel(t.dl)))}
+    else info.append(el('span','','Deadline belum diisi'));
+    lb.append(isi,info);
+    const aksi=el('div','aksi');
+    ['Ubah','Hapus'].forEach(a=>{const b=el('button','',a);b.type='button';b.dataset.aksi=a.toLowerCase();b.dataset.id=t.id;aksi.append(b)});
+    li.append(cb,lb,aksi);
+    ul.append(li);
+  });
+  if(!data.length)ul.append(el('li','kosong','Belum ada tugas. Tambahkan lewat tombol di atas.'));
+}
+
+/* Form tambah / ubah tugas */
+const f=$('#form');
+let ubah=null;
+function reset(){ubah=null;f.reset();$('#simpan').textContent='Tambah tugas';$('#batal').hidden=true}
+f.addEventListener('submit',e=>{
+  e.preventDefault();
+  const v={judul:f.judul.value.trim(),mk:f.mk.value.trim(),ket:f.ket.value.trim(),dl:f.dl.value};
+  if(!v.judul)return;
+  const t=ubah&&data.find(x=>x.id===ubah);
+  if(t)Object.assign(t,v);else data.push(Object.assign({id:Date.now().toString(36),selesai:false},v));
+  simpan();tampil();reset();
+  $('#panel').open=false;
+});
+$('#batal').addEventListener('click',reset);
+
+/* Centang, ubah, dan hapus tugas */
+const daftar=$('#daftar');
+daftar.addEventListener('change',e=>{
+  const t=data.find(x=>x.id===e.target.dataset.id);
+  if(!t)return;
+  t.selesai=e.target.checked;
+  simpan();tampil();
+  const c=document.getElementById('c-'+t.id);if(c)c.focus();
+});
+daftar.addEventListener('click',e=>{
+  const b=e.target.closest('button');
+  if(!b)return;
+  const t=data.find(x=>x.id===b.dataset.id);
+  if(!t)return;
+  if(b.dataset.aksi==='hapus'){
+    data=data.filter(x=>x!==t);simpan();tampil();
+    if(ubah===t.id)reset();
+    return;
+  }
+  ubah=t.id;
+  f.judul.value=t.judul;f.mk.value=t.mk||'';f.ket.value=t.ket||'';f.dl.value=t.dl||'';
+  $('#simpan').textContent='Simpan perubahan';$('#batal').hidden=false;
+  const pn=$('#panel');pn.open=true;
+  pn.scrollIntoView({behavior:'smooth',block:'center'});
+  f.judul.focus({preventScroll:true});
+});
+$('#bersih').addEventListener('click',()=>{
+  if(data.some(x=>x.selesai)&&confirm('Hapus semua tugas yang sudah dicentang?')){
+    data=data.filter(x=>!x.selesai);simpan();tampil();
+  }
+});
+
+/* Jadwal kuliah: tampil, tambah, ubah, hapus */
+const jam=m=>p2(Math.floor(m/60))+'.'+p2(m%60);
+const keMenit=v=>{const [h,m]=v.split(':').map(Number);return h*60+m};
+const keJam=m=>p2(Math.floor(m/60))+':'+p2(m%60);
+
+/* Susun kuliah yang jamnya bertabrakan agar berdampingan, bukan menumpuk */
+function susun(arr){
+  const hasil=arr.slice().sort((a,b)=>a.mulai-b.mulai||a.selesai-b.selesai).map(t=>({t,l:0,n:1}));
+  let grup=[],akhir=-1;
+  hasil.forEach(x=>{
+    if(x.t.mulai>=akhir){grup.push([]);akhir=x.t.selesai}
+    else akhir=Math.max(akhir,x.t.selesai);
+    grup[grup.length-1].push(x);
+  });
+  grup.forEach(g=>{
+    const ujung=[];
+    g.forEach(x=>{
+      let i=ujung.findIndex(e=>e<=x.t.mulai);
+      if(i<0){i=ujung.length;ujung.push(0)}
+      ujung[i]=x.t.selesai;x.l=i;
+    });
+    g.forEach(x=>x.n=ujung.length);
+  });
+  return hasil;
+}
+
+function tampilJadwal(){
+  const awalMin=Math.min(480,...kuliah.map(k=>Math.floor(k.mulai/60)*60));
+  const akhirMin=Math.max(1020,...kuliah.map(k=>Math.ceil(k.selesai/60)*60));
+  const grid=$('#jadwal-grid');
+  grid.style.setProperty('--tot',akhirMin-awalMin);
+  $('#kosong-jadwal').hidden=kuliah.length>0;
+
+  const sumbu=$('#sumbu');sumbu.replaceChildren();
+  for(let m=awalMin;m<=akhirMin;m+=60){
+    const sp=el('span','',jam(m));sp.style.setProperty('--m',m-awalMin);sumbu.append(sp);
+  }
+
+  grid.querySelectorAll('.kolom:not(.sumbu)').forEach((k,i)=>{
+    const lj=k.querySelector('.lajur');lj.replaceChildren();
+    const hariIni=susun(kuliah.filter(x=>x.hari===i+1));
+    k.classList.toggle('hari-kosong',!hariIni.length);
+    hariIni.forEach(({t,l,n})=>{
+      const b=el('article','blok');b.tabIndex=0;
+      b.style.setProperty('--m',t.mulai-awalMin);
+      b.style.setProperty('--d',t.selesai-t.mulai);
+      b.style.setProperty('--c',t.c||WARNA[0]);
+      b.style.setProperty('--l',l);b.style.setProperty('--n',n);
+      b.dataset.mulai=t.mulai;b.dataset.selesai=t.selesai;
+      b.append(el('time','',jam(t.mulai)+'\u2013'+jam(t.selesai)),el('strong','',t.nama));
+      if(t.ruang)b.append(el('span','',t.ruang));
+      if(t.dosen)b.append(el('span','dosen',t.dosen));
+      const aksi=el('div','aksib');
+      ['Ubah','Hapus'].forEach(a=>{const bt=el('button','',a);bt.type='button';bt.dataset.aksi=a.toLowerCase();bt.dataset.id=t.id;aksi.append(bt)});
+      b.append(aksi);
+      lj.append(b);
+    });
+  });
+
+  /* Pilihan mata kuliah di form tugas ikut jadwal */
+  const dl=$('#mk-list');dl.replaceChildren();
+  [...new Set(kuliah.map(k=>k.nama))].forEach(n=>{const o=el('option');o.value=n;dl.append(o)});
+  tandai();
+}
+
+const fj=$('#form-jadwal');
+const galat=$('#galat-jadwal');
+let ubahJ=null;
+function resetJ(){ubahJ=null;fj.reset();galat.hidden=true;$('#simpan-jadwal').textContent='Tambah mata kuliah';$('#batal-jadwal').hidden=true}
+function warnaUntuk(nama){
+  const sama=kuliah.find(k=>k.nama.toLowerCase()===nama.toLowerCase());
+  if(sama&&sama.c)return sama.c;
+  const pakai=WARNA.map(c=>kuliah.filter(k=>k.c===c).length);
+  return WARNA[pakai.indexOf(Math.min(...pakai))];
+}
+fj.addEventListener('submit',e=>{
+  e.preventDefault();
+  const v={nama:fj.nama.value.trim(),hari:+fj.hari.value,mulai:keMenit(fj.mulai.value),selesai:keMenit(fj.selesai.value),ruang:fj.ruang.value.trim(),dosen:fj.dosen.value.trim()};
+  if(!v.nama)return;
+  if(v.selesai<=v.mulai){galat.textContent='Jam selesai harus setelah jam mulai.';galat.hidden=false;return}
+  galat.hidden=true;
+  const t=ubahJ&&kuliah.find(x=>x.id===ubahJ);
+  if(t){Object.assign(t,v);t.c=warnaUntuk(v.nama)}
+  else kuliah.push(Object.assign({id:Date.now().toString(36)},v,{c:warnaUntuk(v.nama)}));
+  simpanJ();tampilJadwal();resetJ();
+  $('#panel-jadwal').open=false;
+});
+$('#batal-jadwal').addEventListener('click',resetJ);
+$('#jadwal-grid').addEventListener('click',e=>{
+  const bt=e.target.closest('button');
+  if(!bt)return;
+  const t=kuliah.find(x=>x.id===bt.dataset.id);
+  if(!t)return;
+  if(bt.dataset.aksi==='hapus'){
+    if(!confirm('Hapus mata kuliah "'+t.nama+'"?'))return;
+    kuliah=kuliah.filter(x=>x!==t);simpanJ();tampilJadwal();
+    if(ubahJ===t.id)resetJ();
+    return;
+  }
+  ubahJ=t.id;
+  fj.nama.value=t.nama;fj.hari.value=t.hari;fj.mulai.value=keJam(t.mulai);fj.selesai.value=keJam(t.selesai);fj.ruang.value=t.ruang||'';fj.dosen.value=t.dosen||'';
+  $('#simpan-jadwal').textContent='Simpan perubahan';$('#batal-jadwal').hidden=false;
+  const pn=$('#panel-jadwal');pn.open=true;
+  pn.scrollIntoView({behavior:'smooth',block:'center'});
+  fj.nama.focus({preventScroll:true});
+});
+$('#kosongkan-jadwal').addEventListener('click',()=>{
+  if(kuliah.length&&confirm('Hapus semua mata kuliah dari jadwal?')){kuliah=[];simpanJ();resetJ();tampilJadwal()}
+});
+
+/* Jadwal hari ini menyala sendiri */
+function tandai(){
+  const now=new Date(),h=now.getDay(),menit=now.getHours()*60+now.getMinutes();
+  document.querySelectorAll('.kolom:not(.sumbu)').forEach((k,i)=>{
+    const ini=i+1===h;
+    k.classList.toggle('ini',ini);
+    k.querySelectorAll('.blok').forEach(b=>{
+      b.classList.toggle('sekarang',ini&&menit>=+b.dataset.mulai&&menit<+b.dataset.selesai);
+    });
+  });
+  $('.jadwal').classList.toggle('ada-ini',h>=1&&h<=5);
+}
+
+tampilJadwal();tampil();
+setInterval(tandai,60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){tandai();tampil()}});
+})();
+</script>
+</body>
+</html>
